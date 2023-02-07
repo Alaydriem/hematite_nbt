@@ -3,12 +3,12 @@ use std::fmt;
 use std::io;
 use std::ops::Index;
 
-use flate2::Compression;
 use flate2::read::{GzDecoder, ZlibDecoder};
 use flate2::write::{GzEncoder, ZlibEncoder};
+use flate2::Compression;
 
 use error::{Error, Result};
-use raw::{RawReader, RawWriter, Endianness};
+use raw::{Endianness, RawReader, RawWriter};
 use value::Value;
 
 /// A generic, complete object in Named Binary Tag format.
@@ -37,23 +37,33 @@ use value::Value;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Blob {
     title: String,
-    content: HashMap<String, Value>
+    content: HashMap<String, Value>,
 }
 
 impl Blob {
     /// Create a new NBT file format representation with an empty name.
     pub fn new() -> Blob {
-        Blob { title: "".to_string(), content: HashMap::new() }
+        Blob {
+            title: "".to_string(),
+            content: HashMap::new(),
+        }
     }
 
     /// Create a new NBT file format representation with the given name.
-    pub fn named<S>(name: S) -> Blob where S: Into<String> {
-        Blob { title: name.into(), content: HashMap::new() }
+    pub fn named<S>(name: S) -> Blob
+    where
+        S: Into<String>,
+    {
+        Blob {
+            title: name.into(),
+            content: HashMap::new(),
+        }
     }
 
     /// Extracts an `Blob` object from an `io::Read` source.
     pub fn from_reader<R>(src: &mut R, endian: Endianness) -> Result<Blob>
-        where R: io::Read
+    where
+        R: io::Read,
     {
         let mut src = RawReader::new(src, endian);
         let (tag, title) = src.emit_next_header()?;
@@ -65,7 +75,10 @@ impl Blob {
         }
         let content = Value::from_raw_reader(tag, &mut src)?;
         match content {
-            Value::Compound(map) => Ok(Blob { title: title, content: map }),
+            Value::Compound(map) => Ok(Blob {
+                title: title,
+                content: map,
+            }),
             _ => Err(Error::NoRootCompound),
         }
     }
@@ -73,7 +86,8 @@ impl Blob {
     /// Extracts an `Blob` object from an `io::Read` source that is
     /// compressed using the Gzip format.
     pub fn from_gzip_reader<R>(src: &mut R, endian: Endianness) -> Result<Blob>
-        where R: io::Read
+    where
+        R: io::Read,
     {
         // Reads the gzip header, and fails if it is incorrect.
         let mut data = GzDecoder::new(src)?;
@@ -83,7 +97,8 @@ impl Blob {
     /// Extracts an `Blob` object from an `io::Read` source that is
     /// compressed using the zlib format.
     pub fn from_zlib_reader<R>(src: &mut R, endian: Endianness) -> Result<Blob>
-        where R: io::Read
+    where
+        R: io::Read,
     {
         Blob::from_reader(&mut ZlibDecoder::new(src), endian)
     }
@@ -91,7 +106,8 @@ impl Blob {
     /// Writes the binary representation of this `Blob` to an `io::Write`
     /// destination.
     pub fn to_writer<W>(&self, dst: &mut W, endian: Endianness) -> Result<()>
-        where W: io::Write
+    where
+        W: io::Write,
     {
         let mut dst = RawWriter::new(dst, endian);
         dst.write_bare_byte(0x0a)?;
@@ -107,7 +123,8 @@ impl Blob {
     /// Writes the binary representation of this `Blob`, compressed using
     /// the Gzip format, to an `io::Write` destination.
     pub fn to_gzip_writer<W>(&self, dst: &mut W, endian: Endianness) -> Result<()>
-        where W: io::Write
+    where
+        W: io::Write,
     {
         self.to_writer(&mut GzEncoder::new(dst, Compression::Default), endian)
     }
@@ -115,7 +132,8 @@ impl Blob {
     /// Writes the binary representation of this `Blob`, compressed using
     /// the Zlib format, to an `io::Write` dst.
     pub fn to_zlib_writer<W>(&self, dst: &mut W, endian: Endianness) -> Result<()>
-        where W: io::Write
+    where
+        W: io::Write,
     {
         self.to_writer(&mut ZlibEncoder::new(dst, Compression::Default), endian)
     }
@@ -128,7 +146,10 @@ impl Blob {
     /// heterogeneous elements is passed in, because this is illegal in the NBT
     /// file format.
     pub fn insert<S, V>(&mut self, name: S, value: V) -> Result<()>
-           where S: Into<String>, V: Into<Value> {
+    where
+        S: Into<String>,
+        V: Into<Value>,
+    {
         // The follow prevents `List`s with heterogeneous tags from being
         // inserted into the file.
         let nvalue = value.into();
@@ -137,7 +158,7 @@ impl Blob {
                 let first_id = vals[0].id();
                 for nbt in vals {
                     if nbt.id() != first_id {
-                        return Err(Error::HeterogeneousList)
+                        return Err(Error::HeterogeneousList);
                     }
                 }
             }
@@ -148,7 +169,8 @@ impl Blob {
 
     /// Tries to get a named `Value` in the blob.
     pub fn get<S>(&self, name: S) -> Option<&Value>
-        where S: Into<&'static str>
+    where
+        S: Into<&'static str>,
     {
         self.content.get(name.into())
     }
@@ -164,7 +186,12 @@ impl<'a> Index<&'a str> for Blob {
 
 impl fmt::Display for Blob {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "TAG_Compound(\"{}\"): {} entry(ies)\n{{\n", self.title, self.content.len())?;
+        write!(
+            f,
+            "TAG_Compound(\"{}\"): {} entry(ies)\n{{\n",
+            self.title,
+            self.content.len()
+        )?;
         for (name, tag) in self.content.iter() {
             write!(f, "  {}(\"{}\"): ", tag.tag_name(), name)?;
             tag.print(f, 2)?;
@@ -179,7 +206,7 @@ use serde::{self, ser::SerializeMap};
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for Blob {
-    fn serialize<S>(&self, serializer: S) -> serde::export::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: serde::ser::Serializer,
     {
@@ -194,12 +221,15 @@ impl serde::Serialize for Blob {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for Blob {
-    fn deserialize<D>(deserializer: D) -> serde::export::Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
         D: serde::de::Deserializer<'de>,
     {
         // No support for named Blobs.
         let map: HashMap<String, Value> = serde::de::Deserialize::deserialize(deserializer)?;
-        Ok(Blob { title: "".to_string(), content: map })
+        Ok(Blob {
+            title: "".to_string(),
+            content: map,
+        })
     }
 }
