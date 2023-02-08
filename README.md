@@ -4,6 +4,10 @@ This repository contains the [Hematite project](http://hematite.piston.rs/)'s
 standalone `nbt` crate for working with Minecraft's [Named Binary Tag](https://minecraft.gamepedia.com/NBT_format)
 (NBT) format.
 
+This repository is a fork of [hematite-nbt](https://github.com/PistonDevelopers/hematite_nbt), implementing [ocecaco's bedrock compatible fork](https://github.com/PistonDevelopers/hematite_nbt/pull/46) + additional patches necessary to get the library working with serde ^1, and a few other minor bug tweaks.
+
+This crate is published to crates.io under `bedrock-hematite-nbt`
+
 This is not the only NBT-related crate available, but it has some notable
 features:
 
