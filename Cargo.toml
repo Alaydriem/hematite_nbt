@@ -1,16 +1,18 @@
 [package]
-name = "hematite-nbt"
-description = "A full-featured library for working with Minecraft's Named Binary Tag (NBT) file format, including Serde support."
+name = "bedrock-hematite-nbt"
+description = "A Minecraft Bedrock compatible fork of hematite-nbt, published to support other crates. A full-featured library for working with Minecraft's Named Binary Tag (NBT) file format, including Serde support."
 documentation = "https://docs.rs/hematite-nbt/"
 repository = "https://github.com/PistonDevelopers/hematite_nbt"
 readme = "README.md"
 license = "MIT"
-keywords = ["nbt", "minecraft", "serde", "serialization"]
-version = "0.4.1"
+keywords = ["nbt", "minecraft", "bedrock", "serde", "serialization"]
+version = "0.4.2"
 authors = [
     "Aaron Jacobs <atheriel@gmail.com>",
     "Fenhl <fenhl@fenhl.net>",
-    "Carlos Cobo <toqueteos@gmail.com>"
+    "Carlos Cobo <toqueteos@gmail.com>",
+    "Daniël Louwrink @ocecaco",
+    "Charles R. Portwood II <charlesportwoodii@erianna.com>"
 ]
 
 [features]
